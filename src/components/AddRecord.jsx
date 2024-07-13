@@ -10,8 +10,9 @@ const AddRecord = () => {
     event.preventDefault();
 
     const accounts = await web3.eth.getAccounts();
-    await myContract.methods.addRecord(title, content).send({ from: accounts[0] });
-
+    await myContract.methods.addRecord(title, content).send({ from: accounts[0],gas: 2000000n, // Increased gas limit
+        gasPrice: await web3.eth.getGasPrice() });
+console.log('added successfully');
     setTitle('');
     setContent('');
   };
