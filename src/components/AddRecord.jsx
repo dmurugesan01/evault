@@ -1,68 +1,71 @@
 import React, { useEffect, useState } from 'react';
-import myContract from '../MyContract';
+import documentStorage from '../DocumentStorage';
 import web3 from '../web3';
 import { Buffer } from 'buffer';
 
 const AddRecord = () => {
   const [account, setAccount] = useState('');
-  const [buffer, setBuffer] = useState(null);
   const [documents, setDocuments] = useState([]);
+  const [status, setStatus] = useState('');
 
   useEffect(() => {
     const loadAccount = async () => {
       const accounts = await web3.eth.getAccounts();
       setAccount(accounts[0]);
-      loadDocuments();
     }
     loadAccount();
   }, []);
 
-  const fileCapture = (e) => {
+  const fileCapture = async (e) => {
     e.preventDefault();
     const file = e.target.files[0];
     const reader = new window.FileReader();
+    reader.onload = async (event) => {
+      const buffer = Buffer.from(event.target.result);
+      const hash = web3.utils.sha3(buffer);
+      console.log('hash', hash);
+      await documentStorage.methods.storeDocument(hash).send({ from: account, gas: 20000000n });
+      setStatus('Document uploaded successfully!');
+    };
     reader.readAsArrayBuffer(file);
-    reader.onloadend = () => setBuffer(Buffer(reader.result));
+    await getDocuments();
   }
 
-  const onSubmit = async (e) => {
-    e.preventDefault();
-    console.log('Submitting file to IPFS...', account);
-    localStorage.setItem('myData', buffer);
-    await myContract.methods.uploadDocuments(localStorage.getItem('myData')).send({ from: account,gas: 2000000n, // Increased gas limit
-        gasPrice: await web3.eth.getGasPrice() });
-    console.log('coming...', localStorage.getItem('myData'));
-    loadDocuments();
-  };
-
-  const loadDocuments = async () => {
-    const docCount = await myContract.methods.getDocumentCount().call();
-    const docs = [];
-
-    for(let i=0; i<docCount; i++) {
-      const doc = await myContract.methods.documents(i).call();
-      docs.push(doc);
+  const getDocuments = async () => {
+    try{
+      const doc = await documentStorage.methods.getAllDocuments().call();
+      console.log('doc', doc);
+      setDocuments(doc);
     }
-    setDocuments(docs);
+    catch(e){
+      console.log(e)
+    }
   }
 
   return (
     <div>
       <h1>Blockchain eVault</h1>
       <p>Your Account: {account}</p>
-      <form onSubmit={onSubmit}>
-        <input type="file" onChange={fileCapture} />
-        <button type="submit">Upload</button>
-      </form>
+      <input type="file" onChange={fileCapture} />
       <hr />
       <h2>Documents</h2>
+      <p>{status}</p>
+      <input
+        type="text"
+        placeholder="Enter document hash"
+        onBlur={(event) => getDocuments(event.target.value)}
+      />
       <ul>
-        {documents.map((doc, index) => (
-          <li key={index}>
-            {doc}
-          </li>
-        ))}
-        </ul>
+      {documents.map((doc, index) => (
+        doc.map((d, i) => (
+        <li key={i}>
+          <p>{d[0]}</p>
+          <p>{d[1]}</p>
+          <p>owner: {d[2]}</p>
+          <p>version: {d.version.toString()}</p>
+        </li>))
+      ))}
+      </ul>
     </div>
   );
 };
