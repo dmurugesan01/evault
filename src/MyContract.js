@@ -3,7 +3,7 @@ import MyContract from './build/contracts/MyContract.json';
 
 const instance = new web3.eth.Contract(
   MyContract.abi,
-  '0x5511a62DFDb3D62d05a8018767BaD9A94456B9E2'
+  '0x7721edF762e85D1f99350bc9741ca14BbDBa7996'
 );
 
 export default instance;

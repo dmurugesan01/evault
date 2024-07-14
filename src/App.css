@@ -2,7 +2,10 @@
   text-align: center;
 }
 
-  
-.Scroll {
-  overflow-y: auto;
+form {
+  margin: 20px 0;
+}
+
+ul {
+  list-style-type: none;
 }
